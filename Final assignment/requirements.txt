@@ -1,0 +1,15 @@
+torch
+torchvision
+numpy
+pandas
+openpyxl
+scikit-image
+scikit-learn
+scipy
+opencv-python
+matplotlib
+seaborn
+wandb
+transformers
+diffusers
+huggingface_hub[cli]

@@ -18,6 +18,7 @@ from argparse import ArgumentParser
 import wandb
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from torchvision.datasets import Cityscapes, wrap_dataset_for_transforms_v2
@@ -30,8 +31,7 @@ from torchvision.transforms.v2 import (
     ToDtype,
 )
 
-from unet import UNet
-
+from model import Model
 
 # Mapping class IDs to train IDs
 id_to_trainid = {cls.id: cls.train_id for cls in Cityscapes.classes}
@@ -54,17 +54,29 @@ def convert_train_id_to_color(prediction: torch.Tensor) -> torch.Tensor:
 
     return color_image
 
+def dice_score(pred, target, ignore_index=255, smooth=1e-6):
+    pred = torch.argmax(torch.softmax(pred, dim=1), dim=1)
+    mask = target != ignore_index
+    pred, target = pred[mask], target[mask]
+
+    if target.numel() == 0:
+        return torch.tensor(1.0, device=pred.device)
+
+    intersection = (pred == target).sum().float()
+    total = pred.numel() + target.numel()
+    dice = (2. * intersection + smooth) / (total + smooth)
+    return dice
 
 def get_args_parser():
 
-    parser = ArgumentParser("Training script for a PyTorch U-Net model")
+    parser = ArgumentParser("Training script for a PyTorch model")
     parser.add_argument("--data-dir", type=str, default="./data/cityscapes", help="Path to the training data")
     parser.add_argument("--batch-size", type=int, default=64, help="Training batch size")
     parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
     parser.add_argument("--num-workers", type=int, default=10, help="Number of workers for data loaders")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
-    parser.add_argument("--experiment-id", type=str, default="unet-training", help="Experiment ID for Weights & Biases")
+    parser.add_argument("--experiment-id", type=str, default="deeplabv3-resnet50-training", help="Experiment ID for Weights & Biases")
 
     return parser
 
@@ -93,7 +105,7 @@ def main(args):
     # Define the transforms to apply to the data
     transform = Compose([
         ToImage(),
-        Resize((256, 256)),
+        Resize((512, 512)),
         ToDtype(torch.float32, scale=True),
         Normalize((0.5,), (0.5,)),
     ])
@@ -131,10 +143,7 @@ def main(args):
     )
 
     # Define the model
-    model = UNet(
-        in_channels=3,  # RGB images
-        n_classes=19,  # 19 classes in the Cityscapes dataset
-    ).to(device)
+    model = Model().to(device)
 
     # Define the loss function
     criterion = nn.CrossEntropyLoss(ignore_index=255)  # Ignore the void class
@@ -158,7 +167,7 @@ def main(args):
             labels = labels.long().squeeze(1)  # Remove channel dimension
 
             optimizer.zero_grad()
-            outputs = model(images)
+            outputs = model(images)["out"]
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -173,6 +182,7 @@ def main(args):
         model.eval()
         with torch.no_grad():
             losses = []
+            dice_scores = []
             for i, (images, labels) in enumerate(valid_dataloader):
 
                 labels = convert_to_train_id(labels)  # Convert class IDs to train IDs
@@ -180,9 +190,11 @@ def main(args):
 
                 labels = labels.long().squeeze(1)  # Remove channel dimension
 
-                outputs = model(images)
+                outputs = model(images)["out"]
                 loss = criterion(outputs, labels)
                 losses.append(loss.item())
+                dice = dice_score(outputs, labels)
+                dice_scores.append(dice.item())
             
                 if i == 0:
                     predictions = outputs.softmax(1).argmax(1)
@@ -205,8 +217,10 @@ def main(args):
                     }, step=(epoch + 1) * len(train_dataloader) - 1)
             
             valid_loss = sum(losses) / len(losses)
+            mean_dice = sum(dice_scores) / len(dice_scores)
             wandb.log({
                 "valid_loss": valid_loss
+                "mean_dice": mean_dice
             }, step=(epoch + 1) * len(train_dataloader) - 1)
 
             if valid_loss < best_valid_loss:
