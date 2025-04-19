@@ -1,4 +1,4 @@
-- **Cristina Musat**
+**Cristina Musat**
 - Codalab username: Cristina
 - Email: [c.musat@student.tue.nl](mailto:c.musat@student.tue.nl) 
 
