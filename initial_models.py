@@ -9,6 +9,12 @@ N_CLASSES = 19
 # U-Net Implementation
 
 class UNet(nn.Module):
+    """ 
+    A simple U-Net architecture for image segmentation.
+    Based on the U-Net architecture from the original paper:
+    Olaf Ronneberger et al. (2015), "U-Net: Convolutional Networks for Biomedical Image Segmentation"
+    https://arxiv.org/pdf/1505.04597.pdf
+    """
     def __init__(self, in_channels=3, n_classes=N_CLASSES):
         super(UNet, self).__init__()
         self.inc = DoubleConv(in_channels, 64)
@@ -81,7 +87,13 @@ class OutConv(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
-# DeepLabv3+ Implementation
+    """
+    DeepLabv3_plus
+    Based on the architecture from the original paper:
+    Chen, L.-C., Zhu, Y., Papandreou, G., Schroff, F., & Adam, H. (2018). Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation.
+    ArXiv. https://arxiv.org/pdf/1802.02611.pdf
+    References: jfzhang95. (2018). PyTorch DeepLab-XCeption. GitHub. https://github.com/jfzhang95/pytorch-deeplab-xception
+    """     
 
 class Bottleneck(nn.Module):
     expansion = 4

@@ -1,3 +1,5 @@
+# Final model used on CodaLab
+
 import torch
 import torch.nn as nn
 import torchvision.models.segmentation as models
