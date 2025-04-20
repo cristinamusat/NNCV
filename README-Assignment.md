@@ -1,5 +1,5 @@
 **Cristina Musat**
-- Codalab username: Cristina
+- Codalab username: Cristina (scur1352)
 - Email: [c.musat@student.tue.nl](mailto:c.musat@student.tue.nl) 
 
 This repository contains the training script (`train.py`) and the final model (`model.py`) used for the Cityscapes Challenge, for the Peak Performance and Efficiency benchmarks.
