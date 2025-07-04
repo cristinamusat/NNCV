@@ -1,3 +1,5 @@
+# Cityscapes Segmentation Challenge – Final Submission
+
 **Cristina Musat**
 - Codalab username: Cristina (scur1352)
 - Email: [c.musat@student.tue.nl](mailto:c.musat@student.tue.nl) 
@@ -36,3 +38,8 @@ python3 train.py \
     --seed 42 \
     --experiment-id "deeplabv3-resnet50-training" \
 ```
+
+## Acknowledgements
+
+This project builds on the official course repository provided by the VCA group:  
+https://github.com/TUE-VCA/NNCV
